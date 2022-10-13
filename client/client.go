@@ -15,43 +15,43 @@ var Connections []net.Conn
 
 //client type
 
-type client struct {
-	conn net.Conn
-	name string
+type Client struct {
+	Conn net.Conn
+	Name string
 }
 
-type notification struct {
-	text string
-	addr string
+type Notification struct {
+	Text string
+	Addr string
 }
 
-type message struct {
-	time       string
-	senderaddr string
-	text       string
+type Message struct {
+	Time       string
+	Senderaddr string
+	Text       string
 }
 
 // creating a map of client with name as key and connection as value
-var clients = make(map[string]client, 10)
+var Clients = make(map[string]Client, 10)
 
 // channels for communicating messages
-var welcome = make(chan notification)
-var leaving = make(chan notification)
-var messages = make(chan message)
+var Welcome = make(chan Notification)
+var Leaving = make(chan Notification)
+var Messages = make(chan Message)
 var ArrOfconnections = []net.Conn{}
 
 // returns the notification message using notification struct
-func newNotification(text string, conn net.Conn) notification {
+func newNotification(text string, conn net.Conn) Notification {
 	addr := conn.RemoteAddr().String()
-	return notification{text, addr}
+	return Notification{text, addr}
 }
 
 // returns the message using message struct
-func newMessage(text string, conn net.Conn) message {
+func newMessage(text string, conn net.Conn) Message {
 	msgtime := time.Now().Format("[2006-01-02 15:04:05]")
 
 	addr := conn.RemoteAddr().String()
-	return message{msgtime, addr, text}
+	return Message{msgtime, addr, text}
 }
 
 func loadChatHistory(conn net.Conn) {
@@ -80,14 +80,14 @@ func ProcessClient(conn net.Conn) {
 		// checking what name we get if client quits before entering name
 		fmt.Println("client name in case of EOF error", name)
 		log.Println(err)
-		delete(clients, name)
+		delete(Clients, name)
 	}
 
 	// load chat history and display to this client who has entered his name
 	loadChatHistory(conn)
 
 	// sending notification to all clients that a new client has joined
-	welcome <- newNotification(name+" has joined our chat...", conn)
+	Welcome <- newNotification(name+" has joined our chat...", conn)
 
 	//reading client messages using new scanner
 	input := bufio.NewScanner(conn)
@@ -99,14 +99,14 @@ func ProcessClient(conn net.Conn) {
 		}
 
 		// new message send the new message to the message channel to be received in broadcast
-		messages <- newMessage(time+"["+name+"]:"+text, conn)
+		Messages <- newMessage(time+"["+name+"]:"+text, conn)
 		fmt.Println("I got here to write the message") //- for debugging
 
 	}
 	// sending notification to all clients that a client has left
-	leaving <- newNotification(name+" has left our chat...", conn)
+	Leaving <- newNotification(name+" has left our chat...", conn)
 	// deleting the client from the map
-	delete(clients, name)
+	delete(Clients, name)
 	// closing the connection
 	conn.Close()
 
@@ -116,36 +116,36 @@ func ProcessClient(conn net.Conn) {
 func Broadcast(conn net.Conn) {
 	for {
 		select {
-		case msg := <-welcome:
-			for _, client := range clients {
-				if msg.addr != client.conn.RemoteAddr().String() {
-					fmt.Fprintln(client.conn, msg.text)
+		case msg := <-Welcome:
+			for _, client := range Clients {
+				if msg.Addr != client.Conn.RemoteAddr().String() {
+					fmt.Fprintln(client.Conn, msg.Text)
 
 				}
 			}
-			nc.AddHistory(msg.text)
-			log.Println(msg.text)
-		case msg := <-messages:
-			for _, client := range clients {
-				if msg.senderaddr != client.conn.RemoteAddr().String() {
-					fmt.Fprintln(client.conn, msg.text)
+			nc.AddHistory(msg.Text)
+			log.Println(msg.Text)
+		case msg := <-Messages:
+			for _, client := range Clients {
+				if msg.Senderaddr != client.Conn.RemoteAddr().String() {
+					fmt.Fprintln(client.Conn, msg.Text)
 
-				} else if msg.senderaddr == client.conn.RemoteAddr().String() {
-					fmt.Fprintln(conn, "\033[1A\033[2K"+msg.text)
-
-				}
-			}
-			nc.AddHistory(msg.text)
-			log.Println(msg.text)
-		case msg := <-leaving:
-			for _, client := range clients {
-				if msg.addr != client.conn.RemoteAddr().String() {
-					fmt.Fprintln(client.conn, msg.text)
+				} else if msg.Senderaddr == client.Conn.RemoteAddr().String() {
+					fmt.Fprintln(conn, "\033[1A\033[2K"+msg.Text)
 
 				}
 			}
-			nc.AddHistory(msg.text)
-			log.Println(msg.text)
+			nc.AddHistory(msg.Text)
+			log.Println(msg.Text)
+		case msg := <-Leaving:
+			for _, client := range Clients {
+				if msg.Addr != client.Conn.RemoteAddr().String() {
+					fmt.Fprintln(client.Conn, msg.Text)
+
+				}
+			}
+			nc.AddHistory(msg.Text)
+			log.Println(msg.Text)
 		}
 	}
 }
@@ -181,25 +181,8 @@ func getName(conn net.Conn) (string, error) {
 		if name == "" {
 			continue
 		}
-		clients[name] = client{conn, name}
+		Clients[name] = Client{conn, name}
 		return name, nil
 	}
 }
 
-// broadcating welcome message to all clients except the one who joined
-// func clientBroadcast(conn net.Conn) {
-// 	fmt.Println("conn is ", conn) //- for debugging
-// 	for {
-// 		msg := <-welcome
-// 		fmt.Println("message address is ", msg.addr) //- for debugging
-// 		for _, client := range clients {
-// 			fmt.Println("client is", client)                    //- for debugging
-// 			fmt.Println("client is connected on ", client.conn) //- for debugging
-// 			if msg.addr != client.conn.RemoteAddr().String() {
-// 				fmt.Println("message address is ", msg.addr)                         //- for debugging
-// 				fmt.Println("client address is ", client.conn.RemoteAddr().String()) //- for debugging
-// 				fmt.Fprintln(client.conn, msg.text)                                  //- for debugging
-// 			}
-// 		}
-// 	}
-// }

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-	netcat "netcat/client"
-	netcatlog "netcat/logger"
+	ncs "netcat/struct"
+	ncl "netcat/logger"
+	ncc "netcat/client"
 )
 
 // StartServer starts the server
@@ -19,7 +20,7 @@ func StartServer(port string) {
 	}
 	defer listener.Close()
 	fmt.Printf("Listening for connections on %s\n", port)
-	netcatlog.CreateNewLogger()
+	ncl.CreateNewLogger()
 
 	// listening for incoming connections as long as the server is running
 	for {
@@ -29,9 +30,9 @@ func StartServer(port string) {
 			continue
 		}
 		// fmt.Printf("%s has joined the chat", conn.RemoteAddr().String())
-		go netcat.ProcessClient(conn)
-		go netcat.Broadcast(conn)
-		netcat.Connections = append(netcat.Connections, conn)
+		go ncc.ProcessClient(conn)
+		go ncc.Broadcast(conn)
+		ncs.Connections = append(ncs.Connections, conn)
 
 	}
 }

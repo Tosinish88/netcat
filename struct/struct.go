@@ -6,27 +6,27 @@ var Connections []net.Conn
 
 //client type
 
-type client struct {
-	conn net.Conn
-	name string
+type Client struct {
+	Conn net.Conn
+	Name string
 }
 
-type notification struct {
-	text string
-	addr string
+type Notification struct {
+	Text string
+	Addr string
 }
 
-type message struct {
-	time       string
-	senderaddr string
-	text       string
+type Message struct {
+	Time       string
+	Senderaddr string
+	Text       string
 }
 
 // creating a map of client with name as key and connection as value
-var clients = make(map[string]client, 10)
+var Clients = make(map[string]Client, 10)
 
 // channels for communicating messages
-var welcome = make(chan notification)
-var leaving = make(chan notification)
-var messages = make(chan message)
+var Welcome = make(chan Notification)
+var Leaving = make(chan Notification)
+var Messages = make(chan Message)
 var ArrOfconnections = []net.Conn{}
