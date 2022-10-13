@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	netcat "ncbackup/server"
+	netcat "netcat/server"
 	"os"
 )
 

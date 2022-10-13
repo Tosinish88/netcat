@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net"
+	nc "netcat/chatlogs"
 	"os"
 	"strings"
+	"time"
 )
 
-var connections []net.Conn
+var Connections []net.Conn
 
 //client type
 
@@ -38,15 +40,26 @@ var leaving = make(chan notification)
 var messages = make(chan message)
 var ArrOfconnections = []net.Conn{}
 
-// returns the notification message
+// returns the notification message using notification struct
 func newNotification(text string, conn net.Conn) notification {
 	addr := conn.RemoteAddr().String()
 	return notification{text, addr}
 }
 
-// returns the message
-func newMessage(time string, senderaddr string, text string) message {
-	return message{time, senderaddr, text}
+// returns the message using message struct
+func newMessage(text string, conn net.Conn) message {
+	msgtime := time.Now().Format("[2006-01-02 15:04:05]")
+
+	addr := conn.RemoteAddr().String()
+	return message{msgtime, addr, text}
+}
+
+func loadChatHistory(conn net.Conn) {
+	fmt.Fprintln(conn, "Loading chat history...")
+	for _, v := range nc.Chathistory {
+		fmt.Fprintln(conn, v)
+	}
+	fmt.Fprintln(conn, "You can begin your chat now...")
 }
 
 // function to process the client
@@ -57,6 +70,7 @@ func newMessage(time string, senderaddr string, text string) message {
 // broadcast messages between clients
 // sends the leaving message to all clients except the one who left
 func ProcessClient(conn net.Conn) {
+	time := time.Now().Format("[2006-01-02 15:04:05]")
 	// printing the linux logo
 	printLinux(conn)
 
@@ -68,10 +82,13 @@ func ProcessClient(conn net.Conn) {
 		log.Println(err)
 		delete(clients, name)
 	}
-	fmt.Println(clients) //- for debugging
+
+	// load chat history and display to this client who has entered his name
+	loadChatHistory(conn)
 
 	// sending notification to all clients that a new client has joined
 	welcome <- newNotification(name+" has joined our chat...", conn)
+
 	//reading client messages using new scanner
 	input := bufio.NewScanner(conn)
 	for input.Scan() {
@@ -80,7 +97,9 @@ func ProcessClient(conn net.Conn) {
 		if text == "" {
 			continue
 		}
-		messages <- newMessage("time", conn.RemoteAddr().String(), text)
+
+		// new message send the new message to the message channel to be received in broadcast
+		messages <- newMessage(time+"["+name+"]:"+text, conn)
 		fmt.Println("I got here to write the message") //- for debugging
 
 	}
@@ -93,54 +112,43 @@ func ProcessClient(conn net.Conn) {
 
 }
 
-// broadcating welcome message to all clients except the one who joined
-func clientBroadcast(conn net.Conn) {
-	fmt.Println("conn is ", conn) //- for debugging
-	for {
-		msg := <-welcome
-		fmt.Println("message address is ", msg.addr) //- for debugging
-		for _, client := range clients {
-			fmt.Println("client is", client)                    //- for debugging
-			fmt.Println("client is connected on ", client.conn) //- for debugging
-			if msg.addr != client.conn.RemoteAddr().String() {
-				fmt.Println("message address is ", msg.addr)                         //- for debugging
-				fmt.Println("client address is ", client.conn.RemoteAddr().String()) //- for debugging
-				fmt.Fprintln(client.conn, msg.text)                                  //- for debugging
-			}
-		}
-	}
-}
-
 // combining the broadcast into one function
-func broadcast(conn net.Conn) {
+func Broadcast(conn net.Conn) {
 	for {
 		select {
 		case msg := <-welcome:
 			for _, client := range clients {
 				if msg.addr != client.conn.RemoteAddr().String() {
 					fmt.Fprintln(client.conn, msg.text)
+
 				}
 			}
+			nc.AddHistory(msg.text)
+			log.Println(msg.text)
 		case msg := <-messages:
 			for _, client := range clients {
 				if msg.senderaddr != client.conn.RemoteAddr().String() {
 					fmt.Fprintln(client.conn, msg.text)
+
+				} else if msg.senderaddr == client.conn.RemoteAddr().String() {
+					fmt.Fprintln(conn, "\033[1A\033[2K"+msg.text)
+
 				}
 			}
+			nc.AddHistory(msg.text)
+			log.Println(msg.text)
 		case msg := <-leaving:
 			for _, client := range clients {
 				if msg.addr != client.conn.RemoteAddr().String() {
 					fmt.Fprintln(client.conn, msg.text)
+
 				}
 			}
-
+			nc.AddHistory(msg.text)
+			log.Println(msg.text)
 		}
 	}
 }
-
-
-
-
 
 // function prints the linux logo
 func printLinux(conn net.Conn) {
@@ -177,3 +185,21 @@ func getName(conn net.Conn) (string, error) {
 		return name, nil
 	}
 }
+
+// broadcating welcome message to all clients except the one who joined
+// func clientBroadcast(conn net.Conn) {
+// 	fmt.Println("conn is ", conn) //- for debugging
+// 	for {
+// 		msg := <-welcome
+// 		fmt.Println("message address is ", msg.addr) //- for debugging
+// 		for _, client := range clients {
+// 			fmt.Println("client is", client)                    //- for debugging
+// 			fmt.Println("client is connected on ", client.conn) //- for debugging
+// 			if msg.addr != client.conn.RemoteAddr().String() {
+// 				fmt.Println("message address is ", msg.addr)                         //- for debugging
+// 				fmt.Println("client address is ", client.conn.RemoteAddr().String()) //- for debugging
+// 				fmt.Fprintln(client.conn, msg.text)                                  //- for debugging
+// 			}
+// 		}
+// 	}
+// }

@@ -15,9 +15,11 @@ func getTimeStampofServer() string {
 	return time
 }
 
+var File *os.File
+
 // creating a new file for logging
 func createLoggingFile() *os.File {
-	fname := getTimeStampofServer() + ".log"
+	fname := getTimeStampofServer() + ".txt"
 	file, err := os.OpenFile(fname, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Println(err)
