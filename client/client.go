@@ -11,6 +11,17 @@ import (
 	"sync"
 	"time"
 )
+// green is when a new user joins
+// blue is that you receive
+// white is message that you send
+// red is when a user leaves
+
+var Reset  = "\033[0m"
+var Red    = "\033[31m"
+var Green  = "\033[32m"
+var Blue   = "\033[34m"
+var White = "\033[37m"
+
 
 var Connections []net.Conn
 
@@ -88,7 +99,7 @@ func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
 	loadChatHistory(conn)
 
 	// sending notification to all clients that a new client has joined
-	Welcome <- newNotification(name+" has joined our chat...", conn)
+	Welcome <- newNotification(Green+name+" has joined our chat..."+ Reset, conn)
 
 	//reading client messages using new scanner
 	input := bufio.NewScanner(conn)
@@ -102,13 +113,12 @@ func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
 		time := time.Now().String()[0:19]
 		// new message send the new message to the message channel to be received in broadcast
 		fmt.Fprintln(conn, "\033[1A\033[K"+"["+time+"]"+"["+name+"]:"+text)
-		fmt.Println("got here too")
-		Messages <- newMessage("["+time+"]"+"["+name+"]:"+text, conn)
+		Messages <- newMessage(Blue+"["+time+"]"+"["+name+"]:"+text + Reset, conn)
 		wg.Done()
 
 	}
 	// sending notification to all clients that a client has left
-	Leaving <- newNotification(name+" has left our chat...", conn)
+	Leaving <- newNotification(Red+name+" has left our chat..."+ Reset, conn)
 	// deleting the client from the map
 	delete(Clients, name)
 	// closing the connection
