@@ -8,6 +8,7 @@ import (
 	nc "netcat/chatlogs"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -48,10 +49,10 @@ func newNotification(text string, conn net.Conn) Notification {
 
 // returns the message using message struct
 func newMessage(text string, conn net.Conn) Message {
-	msgtime := time.Now().Format("[2006-01-02 15:04:05]")
+	time := time.Now().String()[0:19]
 
 	addr := conn.RemoteAddr().String()
-	return Message{msgtime, addr, text}
+	return Message{time, addr, text}
 }
 
 func loadChatHistory(conn net.Conn) {
@@ -69,8 +70,8 @@ func loadChatHistory(conn net.Conn) {
 // sends the welcome message to all clients except the one who joined
 // broadcast messages between clients
 // sends the leaving message to all clients except the one who left
-func ProcessClient(conn net.Conn) {
-	time := time.Now().Format("[2006-01-02 15:04:05]")
+func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
+
 	// printing the linux logo
 	printLinux(conn)
 
@@ -97,10 +98,14 @@ func ProcessClient(conn net.Conn) {
 		if text == "" {
 			continue
 		}
-
+		wg.Add(1)
+		time := time.Now().String()[0:19]
 		// new message send the new message to the message channel to be received in broadcast
-		Messages <- newMessage(time+"["+name+"]:"+text, conn)
+		fmt.Fprintln(conn, "\033[1A\033[K"+"["+time+"]"+"["+name+"]:"+text)
+		fmt.Println("got here too")
+		Messages <- newMessage("["+time+"]"+"["+name+"]:"+text, conn)
 		fmt.Println("I got here to write the message") //- for debugging
+		wg.Done()
 
 	}
 	// sending notification to all clients that a client has left
@@ -129,9 +134,7 @@ func Broadcast(conn net.Conn) {
 			for _, client := range Clients {
 				if msg.Senderaddr != client.Conn.RemoteAddr().String() {
 					fmt.Fprintln(client.Conn, msg.Text)
-
-				} else if msg.Senderaddr == client.Conn.RemoteAddr().String() {
-					fmt.Fprintln(conn, "\033[1A\033[2K"+msg.Text)
+					fmt.Println("got here")
 
 				}
 			}
@@ -185,4 +188,3 @@ func getName(conn net.Conn) (string, error) {
 		return name, nil
 	}
 }
-
