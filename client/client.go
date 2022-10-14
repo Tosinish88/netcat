@@ -104,7 +104,6 @@ func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
 		fmt.Fprintln(conn, "\033[1A\033[K"+"["+time+"]"+"["+name+"]:"+text)
 		fmt.Println("got here too")
 		Messages <- newMessage("["+time+"]"+"["+name+"]:"+text, conn)
-		fmt.Println("I got here to write the message") //- for debugging
 		wg.Done()
 
 	}
@@ -134,7 +133,6 @@ func Broadcast(conn net.Conn) {
 			for _, client := range Clients {
 				if msg.Senderaddr != client.Conn.RemoteAddr().String() {
 					fmt.Fprintln(client.Conn, msg.Text)
-					fmt.Println("got here")
 
 				}
 			}
