@@ -107,11 +107,7 @@ func UpdateName(conn net.Conn) string {
 // broadcast messages between clients
 // sends the leaving message to all clients except the one who left
 func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
-
-	// printing the linux logo
 	printLinux(conn)
-
-	// getting the name of the client
 	name, err := getName(conn)
 	if err != nil {
 		// checking what name we get if client quits before entering name
@@ -124,14 +120,10 @@ func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
 	fmt.Fprintln(conn, "/updatename - update your name")
 	fmt.Fprintln(conn, "/quit - quit the chat") //-implemented
 	fmt.Fprintln(conn, "/exit - exit the chat") //-implemented
-
 	// load chat history and display to this client who has entered his name
-
 	loadChatHistory(conn)
-
 	// sending notification to all clients that a new client has joined
 	Welcome <- newNotification(Green+name+" has joined our chat..."+Reset, conn)
-
 	//reading client messages using new scanner
 	input := bufio.NewScanner(conn)
 	for input.Scan() {
@@ -144,8 +136,6 @@ func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
 			newname := UpdateName(conn)
 			Welcome <- newNotification(Green+oldname+" has updated their name to "+newname+Reset, conn)
 			fmt.Println(name)
-			continue
-
 		} else if text == "/quit" || text == "/exit" {
 			// deleting the client from the map
 			delete(Clients, name)
@@ -161,7 +151,6 @@ func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
 		fmt.Fprintln(conn, "\033[1A\033[K"+"["+time+"]"+"["+name+"]:"+text)
 		Messages <- newMessage(Blue+"["+time+"]"+"["+name+"]:"+text+Reset, conn)
 		// wg.Done()
-
 	}
 	// // taking care of when client leaves without using /quit
 	// // deleting the client from the map
