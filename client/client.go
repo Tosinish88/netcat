@@ -162,14 +162,13 @@ func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
 }
 
 // combining the broadcast into one function
-func Broadcast(conn net.Conn) {
+func Broadcast() {
 	for {
 		select {
 		case msg := <-Welcome:
 			for _, client := range Clients {
 				if msg.Addr != client.Conn.RemoteAddr().String() {
 					fmt.Fprintln(client.Conn, msg.Text)
-
 				}
 			}
 			nc.AddHistory(msg.Text)
@@ -178,7 +177,6 @@ func Broadcast(conn net.Conn) {
 			for _, client := range Clients {
 				if msg.Senderaddr != client.Conn.RemoteAddr().String() {
 					fmt.Fprintln(client.Conn, msg.Text)
-
 				}
 			}
 			nc.AddHistory(msg.Text)
@@ -187,7 +185,6 @@ func Broadcast(conn net.Conn) {
 			for _, client := range Clients {
 				if msg.Addr != client.Conn.RemoteAddr().String() {
 					fmt.Fprintln(client.Conn, msg.Text)
-
 				}
 			}
 			nc.AddHistory(msg.Text)
