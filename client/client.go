@@ -12,7 +12,7 @@ import (
 )
 
 // green is when a new user joins
-// blue is that you receive
+// blue is that you receive a mesasge
 // white is message that you send
 // red is when a user leaves
 
@@ -47,7 +47,7 @@ var Clients = make(map[string]Client, 10)
 var Welcome = make(chan Notification)
 var Leaving = make(chan Notification)
 var Messages = make(chan Message)
-var ArrOfconnections = []net.Conn{}
+var ArrOfconnections = []net.Conn{} //- holds all the clients in a map
 
 // returns the notification message using notification struct
 func newNotification(text string, conn net.Conn) Notification {
