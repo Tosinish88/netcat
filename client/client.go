@@ -47,7 +47,7 @@ var Clients = make(map[string]Client, 10)
 var Welcome = make(chan Notification)
 var Leaving = make(chan Notification)
 var Messages = make(chan Message)
-var ArrOfconnections = []net.Conn{} //- holds all the clients in a map
+var ArrOfconnections = []net.Conn{} // holds all the clients in a map
 
 // returns the notification message using notification struct
 func newNotification(text string, conn net.Conn) Notification {
@@ -124,7 +124,6 @@ func ProcessClient(conn net.Conn) {
 		Leaving <- newNotification(Red+name+" has left our chat..."+Reset, conn)
 	}
 }
-
 
 // combining the broadcast into one function
 func Broadcast() {
