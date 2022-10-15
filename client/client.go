@@ -8,7 +8,6 @@ import (
 	nc "netcat/chatlogs"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -59,7 +58,6 @@ func newNotification(text string, conn net.Conn) Notification {
 // returns the message using message struct
 func newMessage(text string, conn net.Conn) Message {
 	time := time.Now().String()[0:19]
-
 	addr := conn.RemoteAddr().String()
 	return Message{time, addr, text}
 }
@@ -106,7 +104,7 @@ func UpdateName(conn net.Conn) string {
 // sends the welcome message to all clients except the one who joined
 // broadcast messages between clients
 // sends the leaving message to all clients except the one who left
-func ProcessClient(conn net.Conn, wg *sync.WaitGroup) {
+func ProcessClient(conn net.Conn) {
 	printLinux(conn)
 	name, err := getName(conn)
 	if err != nil {

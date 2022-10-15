@@ -7,13 +7,10 @@ import (
 	ncc "netcat/client"
 	ncl "netcat/logger"
 	ncs "netcat/struct"
-	"sync"
-	"time"
 )
 
 // StartServer starts the server
 func StartServer(port string) {
-	var wg sync.WaitGroup
 	// listening on the tcp server
 	listener, err := net.Listen("tcp", port)
 	if err != nil {
@@ -31,11 +28,8 @@ func StartServer(port string) {
 			log.Fatalf("Unable to accept the client: %s", err)
 			continue
 		}
-		// fmt.Printf("%s has joined the chat", conn.RemoteAddr().String())	
-		go ncc.ProcessClient(conn, &wg)
-		
-		wg.Wait()
-		time.Sleep(300 * time.Millisecond)
+		// fmt.Printf("%s has joined the chat", conn.RemoteAddr().String())
+		go ncc.ProcessClient(conn)
 		ncs.Connections = append(ncs.Connections, conn)
 	}
 }
