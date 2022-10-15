@@ -71,32 +71,6 @@ func loadChatHistory(conn net.Conn) {
 	fmt.Fprintln(conn, "You can begin your chat now...")
 }
 
-// function allow client to update his name
-func UpdateName(conn net.Conn) string {
-	str := ""
-	fmt.Fprintln(conn, "Enter your new name:")
-	input := bufio.NewScanner(conn)
-	for input.Scan() {
-		newname := input.Text()
-		// check if the name already exists
-		for _, v := range Clients {
-			if newname == v.Name {
-				fmt.Fprintln(conn, "Name already exists")
-				return ""
-			}
-		}
-		// update the name
-		for _, v := range Clients {
-			if conn.RemoteAddr().String() == v.Conn.RemoteAddr().String() {
-				v.Name = newname
-				fmt.Fprintln(conn, "Name updated successfully")
-				str += newname
-			}
-		}
-	}
-	return str
-}
-
 // function to process the client
 // it takes the connection as an argument
 // prints the linux logo
@@ -115,9 +89,8 @@ func ProcessClient(conn net.Conn) {
 	}
 	// show list of available commands
 	fmt.Fprintln(conn, "List of commands:")
-	fmt.Fprintln(conn, "/updatename - update your name")
+	fmt.Fprintln(conn, "/name - update your name")
 	fmt.Fprintln(conn, "/quit - quit the chat") //-implemented
-	fmt.Fprintln(conn, "/exit - exit the chat") //-implemented
 	// load chat history and display to this client who has entered his name
 	loadChatHistory(conn)
 	// sending notification to all clients that a new client has joined
@@ -128,36 +101,30 @@ func ProcessClient(conn net.Conn) {
 		text := input.Text()
 		if text == "" {
 			continue
-		} else if text == "/updatename" {
-			// update the name of the client
-			oldname := name
-			newname := UpdateName(conn)
-			Welcome <- newNotification(Green+oldname+" has updated their name to "+newname+Reset, conn)
-			fmt.Println(name)
-		} else if text == "/quit" || text == "/exit" {
+		} else if text == "/quit" {
+			// closing the connection
+			conn.Close()
 			// deleting the client from the map
 			delete(Clients, name)
 			// sending notification to all clients that a client has left
-			Leaving <- newNotification(Red+name+" has left our chat..."+Reset, conn)
-			// closing the connection
-			conn.Close()
 			break
 		}
-		// wg.Add(1)
+
 		time := time.Now().String()[0:19]
 		// new message send the new message to the message channel to be received in broadcast
 		fmt.Fprintln(conn, "\033[1A\033[K"+"["+time+"]"+"["+name+"]:"+text)
 		Messages <- newMessage(Blue+"["+time+"]"+"["+name+"]:"+text+Reset, conn)
-		// wg.Done()
 	}
-	// // taking care of when client leaves without using /quit
-	// // deleting the client from the map
-	// delete(Clients, name)
-	// // sending notification to all clients that a client has left
-	// Leaving <- newNotification(Red+name+" has left our chat..."+Reset, conn)
-	// // closing the connection
-	// conn.Close()
+	if input != nil {
+		fmt.Println("closing the connection")
+		conn.Close()
+		// deleting the client from the map
+		delete(Clients, name)
+		// sending notification to all clients that a client has left
+		Leaving <- newNotification(Red+name+" has left our chat..."+Reset, conn)
+	}
 }
+
 
 // combining the broadcast into one function
 func Broadcast() {
@@ -280,3 +247,33 @@ func getName(conn net.Conn) (string, error) {
 // fmt.Fprintln(conn, "/listrooms - list all available rooms")
 // fmt.Fprintln(conn, "/joinroom - join a room")
 // fmt.Fprintln(conn, "/leaveroom - leave a room")
+
+// function allow client to update his name
+// func UpdateName(conn net.Conn) string {
+// 	str := ""
+// 	fmt.Fprintln(conn, "Enter your new name:")
+// 	input := bufio.NewScanner(conn)
+// 	for input.Scan() {
+// 		newname := input.Text()
+// 		// check if the name already exists
+// 		for _, v := range Clients {
+// 			if newname == v.Name {
+// 				fmt.Fprintln(conn, "Name already exists")
+// 				return ""
+// 			} else if conn.RemoteAddr().String() == v.Conn.RemoteAddr().String() {
+// 				v.Name = newname
+// 				Clients[newname] = v
+// 				delete(Clients, v.Name)
+// 				fmt.Println("new name", newname)
+// 				return newname
+// 			}
+// 		}
+// 		// update the name of the client
+// 		fmt.Fprintln(conn, "Name updated successfully")
+// 		str += newname
+
+// 	}
+// 	fmt.Println("name in update name", str)
+// 	return str
+
+// }
